@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { getWalkScore } from '../services/walkscoreService';
 import { getGroceryDistances } from '../services/groceryService';
 import { getCommuteTime } from '../services/commuteService';
+import { geocodeAddress } from '../services/geocodingService';
 import { AddressEvaluationResponse } from '../models/interfaces';
 
 /**
@@ -19,11 +20,14 @@ export async function evaluateAddress(req: Request, res: Response): Promise<void
   }
   
   try {
-    // Fetch data from all services in parallel
+    // Geocode the address once to get coordinates
+    const coordinates = await geocodeAddress(address);
+    
+    // Fetch data from all services in parallel, passing the coordinates
     const [walkscoreResult, groceryResult, commuteResult] = await Promise.all([
-      getWalkScore(address),
-      getGroceryDistances(address),
-      getCommuteTime(address)
+      getWalkScore(address, coordinates),
+      getGroceryDistances(address, coordinates),
+      getCommuteTime(address, coordinates)
     ]);
     
     // Prepare the response
